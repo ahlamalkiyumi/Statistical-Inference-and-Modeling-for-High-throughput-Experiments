@@ -2,4 +2,7 @@
 ### HarvardX PH525.3x
 
 ## Week 1:
-* Comparison between two groups, hypothesis testing, t-test, p-values,  and Monte Carlo simulation. 
+* Comparison between two groups, hypothesis testing, t-test, p-values,  and Monte Carlo simulation.
+
+## Week 2:
+* Error rates and procedures, Vectorizing code
