@@ -6,3 +6,6 @@
 
 ## Week 2:
 * Error rates and procedures, Vectorizing code
+
+## Week2_b:
+* Bonferroni Correction, False Discovery Rate (FDR), Benjamini-Hochberg (Advanced),  and q-values
