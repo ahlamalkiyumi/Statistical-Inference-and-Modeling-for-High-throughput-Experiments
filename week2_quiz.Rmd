@@ -1,0 +1,135 @@
+---
+title: "Week 2 Quiz"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Week 2 Quiz
+
+## Question 2
+A clinical trial of a diagnostic test is performed on 200 people. The null hypothesis is that an individual does not have the disease. 92 people with the disease are correctly labeled as having the disease. 9 people with the disease are incorrectly labeled as healthy when the disease is actually present. 16 healthy people are incorrectly labeled as having the disease. 83 healthy people are correctly labeled as healthy.
+
+C. What percentage of healthy people are false positives?
+```{r }
+healthy = 16 + 83
+disease = 92 + 9
+fp = 16
+fn = 9
+# Calculate percentages
+percent_fp = (fp / healthy) * 100
+percent_fn = (fn / disease) * 100
+```
+
+## Question 3
+
+A certain RNA-seq experiment measures expression of m = 6319 features
+Using the Bonferroni correction, what p-value cutoff k would control the familywise error rate at alpha = 0.05
+```{r }
+m = 6319
+k <- 0.05 /m
+k
+```
+
+# Question 4
+
+Simulate the results of the RNA-seq experiment from Question 3 assuming the null distribution is true for all features. Set the seed to 11. Use runif() to simulate m p-values.
+
+How many p-values are below the cutoff ?
+```{r }
+set.seed(11)
+m <- 6319
+alpha <- 0.05
+pvals <- runif(m,0,1)
+k <- alpha/m
+mistakes <- sum(pvals<k) 
+mistakes
+```
+
+## Question 5
+
+Perform a Monte Carlo simulation of the familywise error rate for the RNA-seq experiment in question 3. Set the seed to 12. Use runif() and replicate() to simulate 10,000 sets of m p-values. For each set, determine how many p-values are below the cutoff k . Under the assumption of the null distribution, these are false positives.
+
+What proportion of simulated experiments have at least one false positive?
+```{r }
+set.seed(12)
+mistakes = replicate(10000, {
+    pvals = runif(m, 0, 1)
+    sum(pvals < k)
+})
+mean(mistakes > 0)
+```
+## Question 6-10 setup
+
+This is a dataset produced by Bottomly et al., performing RNA-sequencing on two strains of mouse with many biological replicates.
+```{r }
+# download Bottomly et al. data
+if (!file.exists("bottomly_eset.RData")) download.file("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/bottomly_eset.RData", 
+    "bottomly_eset.RData")
+load("bottomly_eset.RData")
+
+# also load these libraries, which we previously installed from Bioconductor
+library(Biobase)
+library(genefilter)
+library(qvalue)
+```
+These data are stored in an ExpressionSet object. We will learn how to work with these objects in future courses, but for now we can manually extract the gene expression and strain information:
+```{r }
+dat = exprs(bottomly.eset) # gene expression matrix
+strain = pData(bottomly.eset)$strain # strain factor
+```
+dat is a matrix with each row representing a gene, each column representing a sample, and the values representing RNA-seq read counts for a given gene in a given sample. strain is a factor representing the genetic strain of each sample column.
+
+Use the rowttests() function from the genefilter libaary to calculate p-values for every gene (row) in dat based on strain:
+```{r }
+library(genefilter)
+results <- rowttests(dat,strain)
+pvals <- results$p.value
+```
+
+
+## Question 6
+How many genes have a p-value below .05?
+```{r }
+sum(!is.na(pvals) & pvals < .05)
+```
+
+## Question 7
+
+Using the Bonferroni correction, what p-value cutoff would be required to ensure a FWER below 0.05?
+```{r }
+k = 0.05/length(pvals)
+k
+```
+
+## Question 8
+
+How many genes have a p-value below the cutoff determined by the Bonferroni correction?
+```{r }
+k = 0.05/length(pvals)
+sum(!is.na(pvals) & pvals < k)
+```
+
+## Question 9
+
+Use p.adjust() with the method="fdr" option to compute q-values in order to determine how many genes are significant at an FDR cutoff of 0.05.
+
+How many genes have significant q-values at an FDR cutoff of 0.05 when using p.adjust()?
+```{r }
+fdr = p.adjust(pvals,method="fdr")
+sum(!is.na(fdr) & fdr<0.05)
+```
+
+## Question 10
+
+Now try computing q-values with an alternative method, using the qvalue() function from the qvalue package.
+
+How many genes have significant q-values at an FDR cutoff of 0.05 when using qvalue()?
+```{r }
+library(qvalue)
+res = qvalue(pvals)
+qvals = res$qvalues
+sum(!is.na(qvals) & qvals<0.05)
+```
