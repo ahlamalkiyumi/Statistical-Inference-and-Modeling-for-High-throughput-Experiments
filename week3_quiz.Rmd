@@ -1,0 +1,190 @@
+---
+title: "Week 3 quiz"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Quiz
+
+## Question 1
+Mammograms are important breast cancer screening tests that have contributed to an increase in early diagnosis and decrease in breast cancer mortality. However, like most screening tests, they have a high false positive rate - most women with an abnormal mammogram who are called back for additional testing (like breast biopsies) do not have breast cancer. The probability that a woman with a positive mammogram has cancer on follow-up testing is around 0.1.
+
+Suppose you are a pathologist evaluating 30 random breast biopsies from mammogram follow-up tests.
+
+A. What is the probability that none of the biopsies show cancer?
+```{r }
+n <- 30
+p <- 0.9 #
+prob <- p ^ n
+prob
+```
+
+B. What is the probability that exactly 3 of the biopsies show cancer?
+```{r }
+p_cancer <- 0.1
+n <- 30
+k <- 3
+p_3 <- choose(n,k) * (p_cancer ^k) * ((1-p_cancer)^(n - k))
+p_3
+```
+
+C. What is the probability that at least 10 of the biopsies show cancer?
+
+```{r }
+atleast_10 <- 10
+n <- 30
+p_cancer <- 0.1
+p_10 <- sum(dbinom(atleast_10:n, n, p_cancer))
+p_10 
+```
+
+## Question 2
+
+Suppose you are analyzing RNA-seq data and transcript X is expressed at a level such that it represents 2 out of every 1,000,000 transcripts. This means the probability of observing transcript X in a random read is 0.000002. Now suppose that you evaluate 3,000,000 reads in an experiment.
+
+A. What is the expected number of reads for transcript X?
+```{r }
+n <- 3000000
+p <-  0.000002
+expected <- p*n
+expected
+```
+
+B. Use the Poisson distribution to calculate the probability of observing exactly 1 read for transcript X.
+```{r }
+lambda <- expected
+dpois(1, lambda)
+```
+
+C. What is the probability of observing more than 10 reads for transcript X?
+```{r }
+k = 10
+p_10 <- ppois(k,lambda)
+1- p_10
+```
+
+## Question 3
+In the human genome, cytosines that are followed by guanines (CpGs) are methylated 80% of the time.
+
+A. Consider 30 CpG sites. Using the binomial distribution, what is the exact probability that between 70% and 90% of the CpGs are methylated?
+```{r }
+pbinom(27,30,.8) - pbinom(21,30,.8)
+```
+
+B. Using the normal distribution, what is the approximate probability that between 70% and 90% of CpGs are methylated?
+```{r }
+b <- (27-30*.8)/sqrt(30*.8*.2)
+a <- (21-30*.8)/sqrt(30*.8*.2)
+pnorm(b) - pnorm(a)
+```
+
+C. What is the difference (in absolute value) between the normal approximation and the exact probability (using binomial) of observing methylation between 70% and 90%?
+```{r }
+abs(0.8290965 - 0.8271703)
+```
+
+## Question 4
+In a previous week, we performed 1000 simulations of a series of 30 mouse experiments under the null distribution and, for each simulation, counted the number of p-values under 0.05 to generate a vector pval_counts:
+```{r }
+set.seed(100)
+pval_counts = replicate(1000,{
+    pvals = replicate(30, {
+        cases = rnorm(5,7.5,2.5)
+        controls = rnorm(5,7.5,2.5)
+        t.test(cases,controls)$p.value
+    })
+    sum(pvals < 0.05)
+})
+```
+
+This random sampling can be modeled as a Poisson process, and the Maximum Likelihood Estimate can be used to determine the lambda that best fits this process.
+
+This function takes a lambda and a vector of counts as inputs and returns the log-likelihood for that lambda:
+```{r }
+loglikelihood = function(lambda,x){
+  sum(dpois(x,lambda,log=TRUE))
+}
+```
+
+Compute this log-likelihood for lambdas = seq(0,10,len=101).
+
+A. Which value of lambda maximizes the log likelihood?
+
+```{r }
+lambdas = seq(0,10,len=101)
+l = sapply(lambdas,function(lambda) loglikelihood(lambda,pval_counts))
+mle=lambdas[which.max(l)]
+mle
+```
+
+B. Given that value of lambda, what is the probability of observing 3 or more p-values below 0.05.
+```{r }
+x <- 3
+1 - ppois(x-1, mle)
+```
+
+C. Compare the estimated value of lambda from the simulated experiment to the theoretical expected value of lambda . How many p-values are expected to be below 0.05 due to chance given N=30 =30 tests with a probability of success of p =0.05?
+```{r }
+n <- 30
+p <- 0.05
+n*p
+```
+
+## Question 5
+
+You can generate a set of random variables from an F-distribution with the function rf(). This line of code generates 100 random numbers from an F-distribution with parameters df1=8, df2=16:
+```{r }
+x = rf(100,df1=8,df2=16)
+```
+
+Set the seed to 25, then generate an F-distributed list of random numbers x using the code above. Use fitFDist() from the limma package to fit an F-distribution to x using df1 = 8.
+
+What is the estimated df2 of the F-distributed random numbers?
+```{r }
+set.seed(25)
+x = rf(100,df1=8,df2=16)
+fitFDist(x,df1=8)
+```
+## Question 6
+Set the seed to 28, then use replicate() to repeat the previous procedure 1000 times: each time, generate 100 F-distributed random numbers with the code provided, then use fitFDist() with a known value of df1=8and determine the estimated value of df2.
+
+A. What is the median value of df2 in this Monte Carlo simulation?
+```{r }
+set.seed(28)
+rep = replicate(1000,{
+  x = rf(100,df1=8,df2=16)
+  fitFDist(x,df1=8)$df2
+  
+})
+median(rep)
+```
+
+B. What proportion of estimated df2 values are between 12 and 20 in this Monte Carlo simulation?
+```{r }
+mean((rep>12) & (rep<20))
+```
+
+## Question 7
+
+Set the seed to 28 again, then repeat the previous question except this time increase the number of randomly generated values in rf() to 1000, representing a larger sample size. Again, use fitFDist() with a known value of df1=8 and determine the estimated value of df2.
+
+A. What is the median value of df2 in the Monte Carlo simulation with a larger sample size?
+```{r }
+set.seed(28)
+rep = replicate(1000,{
+  x = rf(1000,df1=8,df2=16)
+  fitFDist(x,df1=8)$df2
+  
+})
+median(rep)
+```
+B. What proportion of estimated df2 values are between 12 and 20 in the Monte Carlo simulation with a larger sample size?
+```{r }
+mean((rep>12) & (rep<20))
+```
+
+When the sample size is smaller, the mean value of df2 estimates is closer than the median value of df2 estimates to the actual value of 16.
