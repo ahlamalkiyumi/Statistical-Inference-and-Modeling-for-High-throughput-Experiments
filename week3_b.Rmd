@@ -1,0 +1,223 @@
+---
+title: "Week3 b"
+output: html_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Maximum Likelihood Estimate (MLE)
+
+
+```{r }
+install.packages("devtools")
+library(devtools)
+install_github("genomicsclass/dagdata")
+library(dagdata)
+data(hcmv)
+```
+
+```{r }
+breaks=seq(0,4000*round(max(locations)/4000),4000)
+	tmp=cut(locations,breaks)
+	counts=as.numeric(table(tmp))
+
+	l<-function(lambda) {
+	ls <- dpois(counts,lambda,log=TRUE)
+	return(sum(ls))
+	}
+
+	lambdas <- seq(3,7,len=100)
+	ls <- exp(sapply(lambdas,l))
+
+	plot(lambdas,ls,type="l")
+	mle=optimize(l,c(0,10),maximum=TRUE)
+	abline(v=mle$maximum)
+
+```
+
+```{r }
+print(c(mle$maximum, mean(counts)))
+
+```
+
+## MLE Exercises #1
+In this assessment we are going to try to answer the question: is there a section of the human cytomegalovirus genome in which the rate of palindromes is higher than expected?
+```{r }
+library(devtools)
+install_github("genomicsclass/dagdata", force = TRUE)
+```
+and then load the palindrome data from the Human cytomegalovirus genome:
+```{r }
+library(dagdata)
+data(hcmv)
+```
+
+These are the locations of palindromes on the genome of this virus:
+```{r }
+library(rafalib)
+mypar()
+plot(locations,rep(1,length(locations)),ylab="",yaxt="n")
+```
+
+These palindromes are quite rare, p is very small. If we break the genome into bins of 4000 basepairs, then we have Np not so small and we might be able to use Poisson to model the number of palindromes in each bin:
+
+```{r }
+breaks = seq(0,4000*round(max(locations)/4000),4000)
+tmp=cut(locations,breaks)
+counts=as.numeric(table(tmp))
+```
+
+So if our model is correct counts should follow a Poisson distribution. The distribution seems about right:
+```{r }
+hist(counts)
+```
+
+```{r }
+probs <- dpois(counts,4)#lambda =4
+likelihood <- prod(probs)
+likelihood
+```
+this is a tiny number. It is usually more convenient to compute log-likelihoods
+```{r }
+logprobs <- dpois(counts,4,log=TRUE)
+loglikelihood <- sum(logprobs)
+loglikelihood
+```
+
+Now write a function that takes lambda and the vector of counts as input, and returns the log-likelihood. Compute this log-likelihood for lambdas = seq(0,15,len=300) and make a plot.
+
+What value of lambdas maximizes the log-likelihood?
+```{r }
+loglikelihood = function(lambda,x){
+  sum(dpois(x,lambda,log=TRUE))
+}
+lambdas = seq(1,15,len=300)
+l = sapply(lambdas,function(lambda) loglikelihood(lambda,counts))
+plot(lambdas,l)
+mle=lambdas[which.max(l)]
+abline(v=mle)
+print(mle)
+```
+
+```{r }
+mean(counts)
+```
+
+## MLE Exercises #2
+
+The point of collecting this dataset was to try to determine if there is a region of the genome that has higher palindrome rate than expected. We can create a plot and see the counts per location:
+```{r }
+breaks = seq(0,4000*round(max(locations)/4000),4000)
+tmp=cut(locations,breaks)
+counts=as.numeric(table(tmp))
+binLocation=(breaks[-1]+breaks[-length(breaks)])/2
+    plot(binLocation,counts,type="l",xlab=)
+```
+What is the center of the bin with the highest count?
+```{r }
+binLocation[which.max(counts)]
+```
+
+## MLE Exercises #3
+For the question above, what is the maximum count?
+```{r }
+max(counts)
+```
+
+## MLE Exercises #4
+
+Now that we have identified the location with the largest palindrome count, we want to know if by chance we could see a value this big.
+If X is a Poisson random variable with rate
+```{r }
+lambda = mean(counts[-which.max(counts)])
+```
+
+What is the probability of seeing a count of 14 or more?
+```{r }
+pval= 1-ppois(13,lambda)
+pval
+```
+
+## MLE Exercises #6
+Use the Bonferroni correction to determine the p-value cut-off that guarantees a FWER of 0.05.
+
+What is this p-value cutoff?
+```{r }
+0.05/57
+```
+
+## MLE Exercises #7
+
+Create a qq-plot to see if our Poisson model is a good fit:
+```{r }
+ps <- (seq(along=counts) - 0.5)/length(counts)
+lambda <- mean( counts[ -which.max(counts)])
+poisq <- qpois(ps,lambda)
+qqplot(poisq,counts)
+abline(0,1)
+```
+Poisson is a very good approximation except for one point that we actually think is associated with a region of interest.
+
+## Models for Variance Exercises
+
+```{r }
+library(devtools)
+install_github("genomicsclass/tissuesGeneExpression")
+library(tissuesGeneExpression)
+```
+Now load this data and select the columns related to endometrium:
+```{r }
+data("tissuesGeneExpression")
+library(genefilter)
+y = e[,which(tissue=="endometrium")]
+```
+
+## Models for Variance Exercises #1
+Compute the across sample variance for the fifteen samples. Then make a qq-plot to see if the variances follow a normal distribution.
+
+Which statement is true? (pick one)
+```{r }
+library(genefilter)
+s2 <- rowVars(y)
+library(rafalib)
+mypar(1,2)
+qqnorm(s2)
+qqline(s2)
+##To see the square root transformation does not help much:
+qqnorm(sqrt(s2))
+qqline(sqrt(s2))
+```
+The normal distribution is not a useful approximation here: the left tail is over estimated and the right tail is underestimated.
+
+## Models for Variance Exercises #2
+
+Now fit an F-distribution with 14 degrees of freedom using the fitFDist() function in the limma package:
+
+What is estimated the estimated scale parameter?
+```{r }
+library(limma)
+estimates=fitFDist(s2,14)
+print( estimates$scale )
+```
+
+## Models for Variance Exercises #3
+
+Now create a qq-plot of the observed sample standard deviation versus the quantiles predicted by the F-distribution (remember to take square root).
+
+Which of the following best describes the qq-plot?
+```{r }
+ps <- (seq(along=s2)-0.5)/length(s2)
+theoretical<- qf(ps,14,estimates$df2)*estimates$scale 
+LIM <- sqrt( range(c(theoretical,s2)) )
+mypar(1,2)
+qqplot(sqrt( theoretical ), sqrt( s2 ),ylim=LIM,xlim=LIM)
+abline(0,1)
+##close up excluding the upper 5%
+K <- sqrt( quantile(s2,0.95) )
+qqplot( sqrt( theoretical ), sqrt( s2 ),ylim=c(0,K),xlim=c(0,K))
+abline(0,1)
+```
+If we exclude the genes with the highest variances (top 5%), the F-distribution provides a good fit.

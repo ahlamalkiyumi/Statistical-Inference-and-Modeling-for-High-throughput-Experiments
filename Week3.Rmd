@@ -1,0 +1,207 @@
+---
+title: "Modeling"
+output: html_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Poisson Example from RNA-seq
+
+```{r }
+N = 10000 #number of genes
+lambdas = 2^seq(1,16,len=N) #these are the true abundances of genes
+y = rpois(N,lambdas) #note that the null hypothesis is true for all genes
+x = rpois(N, lambdas)
+ind = which(y>0 & x>0) #make sure no 0s due to ratio and log
+library(rafalib)
+mypar()
+splot(log2(lambdas),log2(y/x),subset=ind)
+```
+we realized that when the lambdas are on the low end of the spectrum, the variability of log ratio is much higher 
+
+
+```{r }
+install.packages("BiocManager")
+BiocManager::install("parathyroidSE")
+library(parathyroidSE)
+```
+
+```{r }
+install.packages("splot")
+library(splot)
+```
+
+
+
+```{r }
+data(parathyroidGenesSE)
+se<-parathyroidGenesSE
+x<- assay(se)[,23]
+y<-assay(se)[,24]
+ind=which(y>0 & x>0)##make sure no 0s due to ratio and log
+splot((log2(x)+log2(y))/2,log(x/y),subset=ind)
+```
+### simulated gene expression data
+
+```{r }
+N = 10000    # number of genes
+lambdas = 2^seq(1,16, len=N)    # these are the true abundances of genes
+y = rpois(N, lambdas)    # note that the null hypothesis is true for all genes
+x = rpois(N, lambdas)
+ind = which(y>0 & x>0)    # make sure no 0s due to ratio and log
+
+library(rafalib)
+mypar()
+splot(log2(lambdas), log2(y/x), subset=ind)
+
+```
+### real gene expression data
+```{r }
+library(parathyroidSE)
+data(parathyroidGenesSE)
+se = parathyroidGenesSE
+x = assay(se)[,23]
+y = assay(se)[,24]
+
+ind = which(y>0 & x>0)    # make sure no 0s due to ratio and log
+splot((log2(x)+log2(y))/2, log2(x/y), subset=ind)
+
+```
+## Statistical Models Exercises
+
+# Statistical Models Exercises #1
+
+Suppose you have an urn with blue and red balls. If N balls are selected at random with replacement (you put the ball back after you pick it) we can denote the outcomes as random variables X1,....Xn  that are 1 or 0. If the proportion of red balls is  then the distribution of each of these is:
+Pt(Xi=1)=p
+These are also called Bernoulli trials. Note that these random variables are independent because we replace the balls. Flipping a coin is an example of this with p=0.5
+
+The probability of conceiving a girl is 0.49. What is the probability that a family with 4 children has 2 girls and 2 boys (you can assume no twins)?
+```{r }
+dbinom(2,4,0.49)
+```
+
+## Statistical Models Exercises #2
+
+Use what you learned in Question #1 to answer these questions:
+
+What is the probability that a family with 10 children has 4 girls and 6 boys (you can assume no twins)?
+```{r }
+dbinom(4,10,0.49)
+```
+
+## Statistical Models Exercises #3
+
+The genome has 3 billion bases. About 20% are C, 20% are G, 30% are T and 30% are A. Suppose you take a random interval of 20 bases, what is the probability that the GC-content (proportion of Gs or Cs) is strictly above 0.5 in this interval (you can assume independence)?
+```{r }
+1-pbinom(10,20,0.4)
+```
+
+## Statistical Models Exercises #4
+
+The probability of winning the lottery is 1 in 175,223,510. If 189,000,000 randomly generated (with replacement) tickets are sold, what is the probability that at least one winning tickets is sold?
+Give your answer as a proportion between 0 and 1, not a percentage.
+```{r }
+1- dbinom(0, 189000000, 1/175223510)
+```
+
+## Statistical Models Exercises #5
+
+Using the information from the previous question, what is the probability that two or more winning tickets are sold?
+```{r }
+1- (dbinom(0, 189000000, 1/175223510) + dbinom(1, 189000000, 1/175223510))
+```
+
+## Statistical Models Exercises #6 (Normal approximation)
+
+The genome has 3 billion bases. About 20% are C, 20% are G, 30% are T and 30% are A. Suppose you take a random interval of 20 bases, what is the exact probability that the GC-content (proportion of Gs of Cs) is greater than 0.35 and smaller or equal to 0.45 in this interval?
+HINT: use the binomial distribution and pbinom().
+```{r }
+pbinom(9,20,0.4) - pbinom(7,20,0.4)
+```
+
+## Statistical Models Exercises #7
+For the question above, what is the normal approximation to the probability?
+Hint: determine the z-scores associated with 35% and 45% GC content, then use pnorm().
+```{r }
+b <- (9-20*.4)/sqrt(20*.4*.6)
+a <- (7-20*.4)/sqrt(20*.4*.6)
+pnorm(b) - pnorm(a)
+```
+
+## Statistical Models Exercises #8
+
+Repeat Statistical Models Exercises #3, but using an interval of 1000 bases.
+
+What is the difference (in absolute value) between the normal approximation and the exact probability (using binomial) of the GC-content being greater than 0.35 and lesser or equal to 0.45?
+```{r }
+exact = pbinom(450,1000,0.4)-pbinom(350,1000,0.4)
+b <- (450 - 1000*.4)/sqrt(1000*.4*.6)
+a <- (350 - 1000*.4)/sqrt(1000*.4*.6)
+approx <- pnorm(b)-pnorm(a)
+abs(exact-approx)
+```
+
+## Statistical Models Exercises #9
+
+The Cs in our genomes can be methylated or unmethylated. Suppose we have a large (millions) group of cells in which a proportion p of a C of interest are methylated. We break up the DNA of these cells and randomly select pieces and end up with N  pieces that contain the C we care about. This means that the probability of seeing K methylated Cs is binomial:
+exact = dbinom(k,N,p)
+We can approximate this with the normal distribution:
+a <- (k+0.5 - N*p)/sqrt(N*p*(1-p))
+b <- (k-0.5 - N*p)/sqrt(N*p*(1-p))
+approx = pnorm(a) - pnorm(b)
+
+```{r }
+Ns <- c(5,10,30,100)
+ps <- c(0.01,0.10,0.5,0.9,0.99)
+library(rafalib)
+mypar(4,5)
+for(N in Ns){
+  ks <- 1:(N-1)
+  for(p in ps){
+    exact = dbinom(ks,N,p)
+    a = (ks+0.5 - N*p)/sqrt(N*p*(1-p))
+    b = (ks-0.5 - N*p)/sqrt(N*p*(1-p))
+    approx = pnorm(a) - pnorm(b)
+    LIM <- range(c(approx,exact))
+    plot(exact,approx,main=paste("N =",N," p = ",p),xlim=LIM,ylim=LIM,col=1,pch=16)
+    abline(0,1)
+  }
+}
+```
+
+## Statistical Models Exercises #10 (Poisson approximation)
+
+We saw in the previous question that when p is very small, the normal approximation breaks down. If N is very large, then we can use the Poisson approximation.
+
+Earlier we computed the probability of 2 or more tickets winning the lottery when the odds of winning were 1 in 175,223,510 and 189,000,000 tickets were sold. Using the binomial, we can run the code below to compute the probability of exactly two people winning to be:
+```{r }
+N <- 189000000
+p <- 1/175223510
+dbinom(2,N,p)
+```
+
+If we were to use the normal approximation, we would overestimate this, as you can see by running this code:
+```{r }
+a <- (2+0.5 - N*p)/sqrt(N*p*(1-p))
+b <- (2-0.5 - N*p)/sqrt(N*p*(1-p))
+pnorm(a) - pnorm(b)
+```
+To use the Poisson approximation here, use the rate lambda=Np representing the number of tickets per 189,000,000 that win the lottery. Run the following code and note how much better the approximation is:
+
+```{r }
+dpois(2,N*p)
+```
+
+
+In this case it is practically the same because N  is very very large and Np is not 0. These are the assumptions needed for the Poisson to work.
+
+What is the Poisson approximation for the probability of two or more tickets winning?
+Hint: the ppois() function works similarly to the pbinom() function, but for the Poisson distribution.
+```{r }
+N = 189000000
+p = 1/175223510
+1 - ppois(1, N*p)
+```
