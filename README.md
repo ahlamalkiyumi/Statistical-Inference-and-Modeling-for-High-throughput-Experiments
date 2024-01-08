@@ -9,3 +9,9 @@
 
 ## Week2_b:
 * Bonferroni Correction, False Discovery Rate (FDR), Benjamini-Hochberg (Advanced),  and q-values
+
+## Week 3:
+* Poisson, normal distribution
+
+## Week3_b
+* Maximum Likelihood Estimate (MLE), Models for Variance
