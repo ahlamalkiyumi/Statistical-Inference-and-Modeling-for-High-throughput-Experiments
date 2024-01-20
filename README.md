@@ -15,3 +15,10 @@
 
 ## Week3_b
 * Maximum Likelihood Estimate (MLE), Models for Variance
+
+## Week 4:
+* Bayes Rule
+* Hierarchical Model
+
+## Week4_b:
+* EDA for Highthroughput (Volcano plots, histogram, and boxplots)
