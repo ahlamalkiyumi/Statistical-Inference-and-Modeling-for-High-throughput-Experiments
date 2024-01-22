@@ -1,0 +1,151 @@
+---
+title: "Week 4 Quiz"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+
+The incidence of prostate cancer in men over the age of 50 is roughly 0.5%. A prostate cancer screening test (PSA) exists, but it has recently fallen out of favor for several reasons. The PSA test is positive for 51% of men with advanced prostate cancer and negative for 91% of men without prostate cancer.
+A. What is the probability that a man has a negative PSA test given that he has prostate cancer?
+```{r }
+p_cancer <- 0.005
+p_pos_cancer <- 0.51
+p_neg_nocancer <- 0.91
+
+p <- 1- p_pos_cancer 
+p
+```
+
+B. What is the probability that a man has a positive PSA test given that he does not have prostate cancer?
+```{r }
+p <- 1 - p_neg_nocancer
+p
+```
+
+C. What is the probability that a man has prostate cancer given a positive PSA test?
+```{r }
+p <- (0.51 * 0.005)/((0.51 * 0.005)+ (0.09 * .995))
+p
+```
+
+## Question 2
+
+The ChickWeight dataset included in base R contains weights of chicks on different diets over the first 21 days of life.
+
+Suppose we want to evaluate the weight of a chick at day 21. Filter the ChickWeight data to include only weights at day 21:
+```{r }
+install.packages("tidyverse")
+library(tidyverse)
+day21 <- ChickWeight %>% filter(Time == 21)
+```
+
+A. What is the mean weight of chicks on day 21 across all diets?
+```{r }
+mean(day21$weight)
+```
+
+B. What is the standard deviation of chick weight on day 21 across all diets?
+```{r }
+sd(day21$weight)
+```
+
+## Question 3
+
+In general, it is fairly uncommon for a 21 day old chick to weigh over 300g. However, different diets affect the chick weights. Suppose the chick is on diet 3.
+
+A. What is the mean weight of chicks on diet 3 at day 21?
+```{r }
+mean(subset(day21, Diet == 3)$weight)
+#Another way
+#diet3_day21 = day21 %>% filter(Diet == 3)
+#Y = mean(diet3_day21$weight)
+```
+
+B. What is the standard deviation of chick weight on diet 3 at day 21?
+```{r }
+sd(subset(day21, Diet == 3)$weight)
+```
+
+C. Assume that chick weights on diet 3 follow a normal distribution. What is the probability that a 21 day old chick on diet 3 weighs 300g or more?
+```{r }
+mean <- 270.3
+sd <- 71.62254
+1 - pnorm(300,mean,sd)
+```
+
+## Question 4
+
+Chicks on diet 3 have a higher probability of weighing over 300g than the general population of chicks on all diets. However, note that we have less information about chicks on each individual diet than we do about chicks on all diets - there are only 10 weights for chicks on diet 3. This means it may be helpful to apply a hierarchical model to chick weights based on diet.
+A. Using a hierarchical model that combines the overall weight data with the diet 3 weight data, what is the expected weight of a chick on diet 3 at day 21?
+```{r }
+sd <- sd(day21$weight)
+sd_3 <- 71.62254
+mu <- mean(day21$weight)
+Y <- mean(subset(day21, Diet == 3)$weight)
+B <- sd_3^2 / (sd_3^2 + sd^2)
+exp_val <- B*mu + (1-B)*Y
+exp_val 
+```
+
+B. Using a hierarchical model that combines the overall weight data with the diet 3 weight data, what is the standard error of chick weights on diet 3 at day 21?
+```{r }
+sdd= sqrt(1 / (1/sd_3^2 + 1/sd^2))
+sdd
+```
+
+C. Given the expected value and standard error of this hierarchical model, and assuming a normal distribution, what is the probability that a 21 day old chick on diet 3 weighs over 300g?
+```{r }
+1 - pnorm(300, exp_val, sdd)
+```
+
+## Question 6-8 setup: Permutations of mouse gene expression data
+In previous exercises, we analyzed an RNA-seq experiment from Bottomly et al. comparing gene expression across two different strains of mice:
+```{r }
+# load Bottomly et al. data 
+if (!file.exists("bottomly_eset.RData")) download.file("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/bottomly_eset.RData", 
+    "bottomly_eset.RData")
+load("bottomly_eset.RData")
+
+# also load these libraries, which we previously installed from Bioconductor
+library(Biobase)
+library(genefilter)
+library(qvalue)
+
+dat = exprs(bottomly.eset)    # gene expression matrix
+strain = pData(bottomly.eset)$strain    # strain factor
+
+results <- rowttests(dat,strain)
+pvals <- results$p.value
+```
+Set the seed to 1, then permute the strain information:
+```{r }
+set.seed(1)
+permut <- sample(strain)
+```
+
+Use rowttests() to calculate p-values for this simulated null distribution.
+How many genes have a p-value below .05 in this simulated null distribution?
+```{r }
+permresults <- rowttests(dat, permut)
+perm_pvals <- permresults$p.value
+sum(!is.na(perm_pvals) & perm_pvals <0.05)
+```
+
+## Question 7
+
+Create a histogram of p-values for both the original results, pvals, and the permuted p-values.
+
+Which of the following is NOT true about the distribution of p values?
+```{r }
+library(rafalib)
+mypar(1,2)
+hist(pvals)
+hist(permresults$p.value)
+```
+Because the permuted p-values do not follow a uniform distribution, this suggests unexpected correlation between some samples.
+
+
