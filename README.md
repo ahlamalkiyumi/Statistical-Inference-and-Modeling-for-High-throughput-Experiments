@@ -21,4 +21,4 @@
 * Hierarchical Model
 
 ## Week4_b:
-* EDA for Highthroughput (Volcano plots, histogram, and boxplots)
+* EDA for Highthroughput (Volcano plots, histogram, and boxplots, MA)
